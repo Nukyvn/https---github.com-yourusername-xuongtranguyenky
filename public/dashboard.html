@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard - NGUYÊN KÝ</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/tinymce/tinymce.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const App = () => {
+      const [tab, setTab] = useState('login');
+      const [token, setToken] = useState(null);
+      const [products, setProducts] = useState([]);
+      const [gallery, setGallery] = useState([]);
+      const [articles, setArticles] = useState([]);
+      const [videos, setVideos] = useState([]);
+      const [testimonials, setTestimonials] = useState([]);
+      const [contactInfo, setContactInfo] = useState([]);
+      const [form, setForm] = useState({});
+
+      useEffect(() => {
+        if (token && tab !== 'login') {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          if (tab === 'products') axios.get('http://localhost:3000/api/products').then(res => setProducts(res.data));
+          if (tab === 'gallery') axios.get('http://localhost:3000/api/gallery').then(res => setGallery(res.data));
+          if (tab === 'articles') axios.get('http://localhost:3000/api/articles').then(res => setArticles(res.data));
+          if (tab === 'videos') axios.get('http://localhost:3000/api/videos').then(res => setVideos(res.data));
+          if (tab === 'testimonials') axios.get('http://localhost:3000/api/testimonials').then(res => setTestimonials(res.data));
+          if (tab === 'contact') axios.get('http://localhost:3000/api/contact_info').then(res => setContactInfo(res.data));
+        }
+      }, [tab, token]);
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        axios.post('http://localhost:3000/api/login', form).then(res => {
+          setToken(res.data.token);
+          setTab('products');
+          setForm({});
+        }).catch(() => alert('Sai thông tin đăng nhập'));
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        Object.keys(form).forEach(key => formData.append(key, form[key]));
+        axios.post(`http://localhost:3000/api/${tab}`, formData).then(() => {
+          setForm({});
+          axios.get(`http://localhost:3000/api/${tab}`).then(res => {
+            if (tab === 'products') setProducts(res.data);
+            if (tab === 'gallery') setGallery(res.data);
+            if (tab === 'articles') setArticles(res.data);
+            if (tab === 'videos') setVideos(res.data);
+            if (tab === 'testimonials') setTestimonials(res.data);
+            if (tab === 'contact') setContactInfo(res.data);
+          });
+        });
+      };
+
+      const handleDelete = (id) => {
+        axios.delete(`http://localhost:3000/api/${tab}/${id}`).then(() => {
+          axios.get(`http://localhost:3000/api/${tab}`).then(res => {
+            if (tab === 'products') setProducts(res.data);
+            if (tab === 'gallery') setGallery(res.data);
+            if (tab === 'articles') setArticles(res.data);
+            if (tab === 'videos') setVideos(res.data);
+            if (tab === 'testimonials') setTestimonials(res.data);
+            if (tab === 'contact') setContactInfo(res.data);
+          });
+        });
+      };
+
+      const renderForm = () => {
+        if (tab === 'login') return (
+          <>
+            <input type="text" placeholder="Tên đăng nhập" value={form.username || ''} onChange={e => setForm({...form, username: e.target.value})} className="border p-2 mr-2" />
+            <input type="password" placeholder="Mật khẩu" value={form.password || ''} onChange={e => setForm({...form, password: e.target.value})} className="border p-2 mr-2" />
+            <button type="submit" className="bg-blue-500 text-white p-2">Đăng nhập</button>
+          </>
+        );
+        if (tab === 'products') return (
+          <>
+            <input type="text" placeholder="Tên sản phẩm" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} className="border p-2 mr-2" />
+            <textarea placeholder="Mô tả" value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} className="border p-2 mr-2"></textarea>
+            <input type="number" placeholder="Giá (VNĐ)" value={form.price || ''} onChange={e => setForm({...form, price: e.target.value})} className="border p-2 mr-2" />
+            <input type="file" onChange={e => setForm({...form, image: e.target.files[0]})} className="border p-2 mr-2" />
+          </>
+        );
+        if (tab === 'gallery') return (
+          <>
+            <input type="text" placeholder="Tiêu đề" value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} className="border p-2 mr-2" />
+            <textarea placeholder="Mô tả" value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} className="border p-2 mr-2"></textarea>
+            <input type="file" onChange={e => setForm({...form, image: e.target.files[0]})} className="border p-2 mr-2" />
+          </>
+        );
+        if (tab === 'articles') return (
+          <>
+            <select value={form.type || 'article'} onChange={e => setForm({...form, type: e.target.value})} className="border p-2 mr-2">
+              <option value="article">Bài viết</option>
+              <option value="news">Tin tức</option>
+            </select>
+            <input type="text" placeholder="Tiêu đề" value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} className="border p-2 mr-2" />
+            <textarea id="editor" value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} className="border p-2 mr-2"></textarea>
+            <input type="file" onChange={e => setForm({...form, image: e.target.files[0]})} className="border p-2 mr-2" />
+          </>
+        );
+        if (tab === 'videos') return (
+          <>
+            <input type="text" placeholder="Tiêu đề" value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} className="border p-2 mr-2" />
+            <input type="text" placeholder="URL video" value={form.url || ''} onChange={e => setForm({...form, url: e.target.value})} className="border p-2 mr-2" />
+            <textarea placeholder="Mô tả" value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} className="border p-2 mr-2"></textarea>
+            <input type="file" onChange={e => setForm({...form, thumbnail: e.target.files[0]})} className="border p-2 mr-2" />
+          </>
+        );
+        if (tab === 'testimonials') return (
+          <>
+            <input type="text" placeholder="Tên" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} className="border p-2 mr-2" />
+            <input type="text" placeholder="Vai trò" value={form.role || ''} onChange={e => setForm({...form, role: e.target.value})} className="border p-2 mr-2" />
+            <textarea placeholder="Nội dung" value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} className="border p-2 mr-2"></textarea>
+          </>
+        );
+        if (tab === 'contact') return (
+          <>
+            <select value={form.type || 'phone'} onChange={e => setForm({...form, type: e.target.value})} className="border p-2 mr-2">
+              <option value="phone">Điện thoại</option>
+              <option value="email">Email</option>
+              <option value="address">Địa chỉ</option>
+              <option value="working_hours">Giờ làm việc</option>
+            </select>
+            <textarea placeholder="Giá trị" value={form.value || ''} onChange={e => setForm({...form, value: e.target.value})} className="border p-2 mr-2"></textarea>
+          </>
+        );
+      };
+
+      return (
+        <div className="p-4 max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">NGUYÊN KÝ Dashboard</h1>
+          {token && (
+            <div className="mb-4">
+              <button onClick={() => setTab('products')} className="mr-2 p-2 bg-blue-500 text-white">Sản phẩm</button>
+              <button onClick={() => setTab('gallery')} className="mr-2 p-2 bg-blue-500 text-white">Thư viện</button>
+              <button onClick={() => setTab('articles')} className="mr-2 p-2 bg-blue-500 text-white">Bài viết/Tin tức</button>
+              <button onClick={() => setTab('videos')} className="mr-2 p-2 bg-blue-500 text-white">Video</button>
+              <button onClick={() => setTab('testimonials')} className="mr-2 p-2 bg-blue-500 text-white">Đánh giá</button>
+              <button onClick={() => setTab('contact')} className="mr-2 p-2 bg-blue-500 text-white">Liên hệ</button>
+              <button onClick={() => setToken(null)} className="mr-2 p-2 bg-red-500 text-white">Đăng xuất</button>
+            </div>
+          )}
+          <form onSubmit={tab === 'login' ? handleLogin : handleSubmit} className="mb-8">
+            {renderForm()}
+            {tab !== 'login' && <button type="submit" className="bg-blue-500 text-white p-2">Thêm</button>}
+          </form>
+          {token && (
+            <div>
+              {(tab === 'products' ? products : tab === 'gallery' ? gallery : tab === 'articles' ? articles : tab === 'videos' ? videos : tab === 'testimonials' ? testimonials : contactInfo).map(item => (
+                <div key={item.id} className="border p-4 mb-4 flex justify-between">
+                  <div>
+                    <h2>{item.title || item.name || item.type}</h2>
+                    <p>{item.description || item.content || item.value}</p>
+                    {item.price && <p>{item.price}</p>}
+                    {item.url && <a href={item.url} target="_blank" className="text-blue-500">Xem video</a>}
+                    {(item.image || item.thumbnail) && <img src={`http://localhost:3000${item.image || item.thumbnail}`} alt={item.title || item.name} className="w-32" />}
+                  </div>
+                  <button onClick={() => handleDelete(item.id)} className="bg-red-500 text-white p-2">Xóa</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    tinymce.init({
+      selector: '#editor',
+      plugins: 'lists link image',
+      toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | link image',
+      readonly: false,
+      menubar: true,
+      statusbar: true,
+      images_upload_handler: (blobInfo, success, failure) => {
+        const formData = new FormData();
+        formData.append('image', blobInfo.blob(), blobInfo.filename());
+        axios.post('http://localhost:3000/api/upload', formData, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(res => success(res.data.url)).catch(failure);
+      }
+    });
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
